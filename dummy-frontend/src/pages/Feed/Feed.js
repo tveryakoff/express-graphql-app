@@ -116,37 +116,59 @@ class Feed extends Component {
       editLoading: true
     });
     // Set up data (with image!)
-    let url = 'http://localhost:8080/feed/posts';
+    let url = 'http://localhost:8080/graphql';
     let method = 'POST'
-    if (this.state.editPost) {
-      method = 'PUT'
-      url = `http://localhost:8080/feed/posts/${postData._id}`
-    }
 
     const formData = new FormData()
     formData.append('title', postData.title)
     formData.append('content', postData.content)
+
+    let graphqlQuery = {
+      query: `
+        mutation {
+         createPost(
+          postInput: {
+            title: "${postData.title}",
+            content: "${postData.content}",
+            imageUrl: "some_image_url"
+          }
+         ) {
+          _id
+          title
+          content
+          imageUrl
+          creator {
+            name
+          }
+          createdAt
+         }
+        } 
+      `
+    }
+
     if (postData.image) {
       formData.append('image', postData.image)
     }
 
-    fetch(url, {method, body: formData, headers: {
-        Authorization: `Bearear ${this.props.token}`
+    fetch(url, {method, body: JSON.stringify(graphqlQuery), headers: {
+        Authorization: `Bearear ${this.props.token}`,
+        'Content-Type': 'application/json'
 
       }})
-      .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error('Creating or editing a post failed!');
-        }
-        return res.json();
-      })
+      .then(res =>  res.json())
       .then(resData => {
+        if (resData.errors) {
+          throw new Error ('Post creation failed')
+        }
+
+        const data = resData.data.createPost
+
         const post = {
-          _id: resData.post._id,
-          title: resData.post.title,
-          content: resData.post.content,
-          creator: resData.post.creator,
-          createdAt: resData.post.createdAt
+          _id: data._id,
+          title: data.title,
+          content: data.content,
+          creator: data.creator,
+          createdAt: data.createdAt
         };
         this.setState(prevState => {
           return {

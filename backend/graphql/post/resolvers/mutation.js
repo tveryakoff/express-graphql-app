@@ -20,16 +20,28 @@ export default {
       throw error
     }
 
+    const {userId} = req
+    const user = await User.findById(userId)
+
+    if (!userId || !user) {
+      const error = new Error('Not authenticated')
+      error.status = 401
+      throw error
+    }
+
     const post = new Post({
       title: postInput.title,
       content: postInput.content,
-      imageUrl: postInput.imageUrl
+      imageUrl: postInput.imageUrl,
+      creator: user
     })
 
-    const createdPost = await post.save()
-    //add post to users' posts
 
-    return {...createdPost._doc, _id: createdPost._id.toString(), createdAt: createdPost.createdAy.toISOString(), updatedAt: createdPost.updatedAt.toISOString()}
+    const createdPost = await post.save()
+    user.posts.push(createdPost)
+    await user.save()
+
+    return {...createdPost._doc, _id: createdPost._id.toString(), createdAt: createdPost.createdAt.toISOString(), updatedAt: createdPost.updatedAt.toISOString()}
   }
 
 
