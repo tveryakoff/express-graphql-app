@@ -3,7 +3,8 @@ import {resolvers as postResolvers} from './post/index'
 
 export default {
   Query: {
-    ...userResolvers.query
+    ...userResolvers.query,
+    ...postResolvers.query
   },
   Mutation: {
     ...userResolvers.mutation,

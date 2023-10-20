@@ -10,11 +10,20 @@ const typeDefs = gql`
     createdAt: String!
     updatedAt: String
   }
+  
+  type PostsData {
+    posts: [Post!]!
+    count: Int!
+  }
 
   input PostInputData {
     title: String!
     content: String!
     imageUrl: String!
+  }
+  
+  extend type Query {
+    posts: PostsData!
   }
 
   extend type Mutation {

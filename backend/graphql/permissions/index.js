@@ -4,7 +4,8 @@ const isAuthenticated = rule()((_, args, {req}) =>  req.isAuth)
 
 const permissions = shield({
   Mutation: {
-    createPost: isAuthenticated
+    createPost: isAuthenticated,
+    // posts: isAuthenticated
   },
 
 }, {allowExternalErrors: true})
