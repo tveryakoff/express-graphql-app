@@ -42,6 +42,48 @@ export default {
     await user.save()
 
     return {...createdPost._doc, _id: createdPost._id.toString(), createdAt: createdPost.createdAt.toISOString(), updatedAt: createdPost.updatedAt.toISOString()}
+  },
+  updatePost: async function(_, {id, postInput}, {req}) {
+    const errors = []
+    if (validator.isEmpty(postInput.title) || !validator.isLength(postInput.title, {min: 5})) {
+      errors.push({title: 'too short'})
+    }
+
+    if (validator.isEmpty(postInput.content)) {
+      errors.push({content: 'cant be empty'})
+    }
+
+    if (errors.length > 0) {
+      const error = new Error('invalid input')
+      error.fields = errors
+      error.status = 400
+      throw error
+    }
+
+    const {userId} = req
+    const post = await Post.findById(id).populate('creator')
+
+    if (!post) {
+      const error = new Error('Post not found')
+      error.status = 404
+      throw error
+    }
+
+    if (!post.creator || post.creator._id.toString() !== userId) {
+      const error = new Error('No rights for updating the post')
+      throw error
+    }
+
+
+
+    post.title = postInput.title || post.title
+    post.content = postInput.content || post.content
+    post.imageUrl = postInput.imageUrl || post.imageUrl
+
+    await post.save()
+
+    return post
+
   }
 
 

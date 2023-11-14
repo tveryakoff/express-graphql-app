@@ -133,7 +133,9 @@ class Feed extends Component {
     let method = 'POST'
 
     const formData = new FormData()
-    formData.append('image', postData.image)
+    if (postData.image) {
+      formData.append('image', postData.image)
+    }
     if (this.state.editPost) {
       formData.append('oldPath', this.state.editPost.imagePath)
     }
@@ -143,14 +145,36 @@ class Feed extends Component {
       body: formData
     })
 
-        .then (res => res.json())
+      .then (res => res.json())
       .then(response => {
 
       const imageUrl = response.filePath
-      console.log('imageUrl', imageUrl)
 
-
-      let graphqlQuery = {
+      let graphqlQuery = this.state.isEditing ?
+          {
+          query: `
+        mutation {
+         updatePost(
+          id: "${this.state.editPost._id}",
+          postInput: {
+            title: "${postData.title}",
+            content: "${postData.content}",
+            imageUrl: "${imageUrl}"
+          }
+         ) {
+          _id
+          title
+          content
+          imageUrl
+          creator {
+            name
+          }
+          createdAt
+         }
+        }
+      `
+          }
+       :  {
         query: `
         mutation {
          createPost(
@@ -185,7 +209,8 @@ class Feed extends Component {
           throw new Error ('Post creation failed')
         }
 
-        const data = resData.data.createPost
+        const key = this.state.isEditing ? 'updatePost' : 'createPost'
+        const data = resData.data[key]
 
         const post = {
           _id: data._id,
