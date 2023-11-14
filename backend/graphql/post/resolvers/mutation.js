@@ -1,6 +1,7 @@
 import {User} from '../../../models/user'
 import {Post} from '../../../models/post'
 import validator from 'validator'
+import deleteFile from "../../../utils/deleteFile";
 
 export default {
   createPost: async function(_, {postInput}, {req}) {
@@ -83,7 +84,15 @@ export default {
     await post.save()
 
     return post
-
+  },
+  deletePost: async function(_, {id}, {req}) {
+    const post = await Post.findById(id)
+    deleteFile(post.imageUrl)
+    await Post.findByIdAndDelete(id)
+    const user = User.findById(req.userId)
+    user.posts.pull(id)
+    await user.save()
+    return true
   }
 
 
