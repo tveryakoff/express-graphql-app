@@ -52,19 +52,32 @@ class Feed extends Component {
       page--;
       this.setState({ postPage: page });
     }
-    fetch(`http://localhost:8080/feed/posts/?page=${this.state.postPage}`, {headers: {
-        Authorization: `Bearear ${this.props.token}`
-      }})
-      .then(res => {
-        if (res.status !== 200) {
-          throw new Error('Failed to fetch posts.');
+    const graphqlQuery = {
+      query:`{
+        posts(page: ${page}) {
+          posts {
+            _id
+            title
+            content
+            imageUrl
+            creator {
+              name
+            }
+            createdAt
+          }
+          count
         }
-        return res.json();
-      })
+      }`
+    }
+    fetch(`http://localhost:8080/graphql`, {method: 'POST', body: JSON.stringify(graphqlQuery), headers: {
+        Authorization: `Bearear ${this.props.token}`,
+        'Content-Type': 'application/json'
+      }})
+      .then(res => res.json())
       .then(resData => {
         this.setState({
-          posts: resData.posts,
-          totalPosts: resData.totalItems,
+          posts: resData.data.posts.posts,
+          totalPosts: resData.data.posts.count,
           postsLoading: false
         });
       })
@@ -120,17 +133,31 @@ class Feed extends Component {
     let method = 'POST'
 
     const formData = new FormData()
-    formData.append('title', postData.title)
-    formData.append('content', postData.content)
+    formData.append('image', postData.image)
+    if (this.state.editPost) {
+      formData.append('oldPath', this.state.editPost.imagePath)
+    }
+    fetch('http://localhost:8080/uploadImage', {method: 'PUT', headers: {
+      Authorization: `Bearear ${this.props.token}`,
+      },
+      body: formData
+    })
 
-    let graphqlQuery = {
-      query: `
+        .then (res => res.json())
+      .then(response => {
+
+      const imageUrl = response.filePath
+      console.log('imageUrl', imageUrl)
+
+
+      let graphqlQuery = {
+        query: `
         mutation {
          createPost(
           postInput: {
             title: "${postData.title}",
             content: "${postData.content}",
-            imageUrl: "some_image_url"
+            imageUrl: "${imageUrl}"
           }
          ) {
           _id
@@ -142,19 +169,16 @@ class Feed extends Component {
           }
           createdAt
          }
-        } 
+        }
       `
-    }
+      }
 
-    if (postData.image) {
-      formData.append('image', postData.image)
-    }
+      return fetch(url, {method, body: JSON.stringify(graphqlQuery), headers: {
+          Authorization: `Bearear ${this.props.token}`,
+          'Content-Type': 'application/json'
 
-    fetch(url, {method, body: JSON.stringify(graphqlQuery), headers: {
-        Authorization: `Bearear ${this.props.token}`,
-        'Content-Type': 'application/json'
-
-      }})
+        }})
+    })
       .then(res =>  res.json())
       .then(resData => {
         if (resData.errors) {
@@ -171,12 +195,23 @@ class Feed extends Component {
           createdAt: data.createdAt
         };
         this.setState(prevState => {
+          let updatedPosts = [...prevState.posts];
+          if (prevState.editPost) {
+            const postIndex = prevState.posts.findIndex(
+                p => p._id === prevState.editPost._id
+            );
+            updatedPosts[postIndex] = post;
+          } else {
+            updatedPosts.unshift(post);
+          }
           return {
+            posts: updatedPosts,
             isEditing: false,
             editPost: null,
             editLoading: false
           };
         });
+
       })
       .catch(err => {
         console.log(err);

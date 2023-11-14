@@ -1,7 +1,5 @@
-const path = require("path");
+import path from 'path'
 
 const publicImagesPath = path.join(process.cwd(), 'public', 'images')
 
-module.exports = {
-  publicImagesPath
-}
+export default publicImagesPath

@@ -23,7 +23,7 @@ const typeDefs = gql`
   }
   
   extend type Query {
-    posts: PostsData!
+    posts(page: Int): PostsData!
   }
 
   extend type Mutation {

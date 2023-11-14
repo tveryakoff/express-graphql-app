@@ -14,12 +14,14 @@ import path from 'path'
 import { fileURLToPath } from 'url';
 import auth from './middlewares/auth'
 import {applyMiddleware} from "graphql-middleware";
+import cors from 'cors'
+import permissions from "./graphql/permissions/index";
+import imageUpload from "./middlewares/imageUpload";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import cors from 'cors'
-import permissions from "./graphql/permissions/index";
 
 const app = express()
 
@@ -41,8 +43,6 @@ await apolloServer.start()
 
 
 // app.use(bodyparser.urlencoded()) // x-www-form-url-encoded format
-app.use(bodyparser.json()) // application/json
-app.use(express.static(path.join(__dirname, 'public')) )
 // CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -54,10 +54,16 @@ app.use((req, res, next) => {
   next()
 })
 
+app.use('/public', express.static(path.join(process.cwd(), 'public')) )
+
+
 app.use(auth)
+app.use(bodyparser.json({limit: '100mb'})) // application/json
 
 app.use('/graphql', cors(), bodyparser.json(), expressMiddleware(apolloServer, { context: async ({ req }) => ({ req }),
 }));
+
+app.put('/uploadImage', imageUpload)
 
 
 app.use(errorMiddleware)
