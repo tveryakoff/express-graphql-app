@@ -1,6 +1,19 @@
 import {Post} from "../../../models/post";
 
 const resolver = {
+  post: async (_, {id}) => {
+    const post = await Post.findById(id).populate('creator')
+    if (!post) {
+      return {}
+    }
+
+    return {
+      ...post._doc,
+      id: post.id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    }
+  },
   posts: async (_, {page}) => {
     const perPage = 2
     const currentPage = page || 1

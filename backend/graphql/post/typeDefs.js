@@ -23,6 +23,7 @@ const typeDefs = gql`
   }
   
   extend type Query {
+    post(id: ID!): Post!
     posts(page: Int): PostsData!
   }
 
